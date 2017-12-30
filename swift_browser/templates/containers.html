@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="container">
+        <ul class="breadcrumb">
+            <li>Containers</li>
+       </ul> 
+    
+        <table class="table table-striped">
+        
+        <thead>
+            <tr>
+                <th style="width: 1em;" class="hidden-phone"></th>
+                <th>Name</th>
+                <th style="width: 1em;" class="hidden-phone">Objects</th>
+                <th style="width: 5em;" class="hidden-phone">Size</th>
+                <th style="width: 1em;">
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for container in containers %}
+            <tr>
+            <td class="hidden-phone"><i class="icon-inbox"></i></td>
+            <td><strong>{{container.name}}</strong></td>
+    	    <td class="hidden-phone">{{container.count}}</td>
+    	    <td class="hidden-phone">{{container.bytes|filesizeformat}}</td>
+
+            <td>
+            </td>
+
+            </tr> 
+
+        {% empty %}
+        <tr>
+            <td colspan="5">
+            <strong><center>There are no containers in this account yet. Create a new container by clicking the red button.<center></strong>
+            </td>
+        </tr> 
+ 
+        {% endfor %}
+        </tbody> 
+       
+        <tfoot>
+            <tr>
+                <th colspan="5" class="center">
+                    {{account_stat.x_account_bytes_used|filesizeformat}} 
+                    {% if account_stat.x_account_meta_quota_bytes %}
+                        of
+                        {{account_stat.x_account_meta_quota_bytes|filesizeformat}} 
+                    {% endif %}
+                    used
+                </th>
+            </tr>
+        </tfoot>
+        </table>
+        </div>
+        </div>
+    {% endblock %}
+
+

@@ -28,7 +28,8 @@ SECRET_KEY = os.getenv(
 )
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+#DEBUG = True
+DEBUG = bool(os.environ.get('DJANGO_DEBUG', False))
 
 ALLOWED_HOSTS = ['*']
 
@@ -79,6 +80,12 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'wsgi.application'
 
+# swiftbrowser setup
+SWIFT_AUTH_URL = os.getenv('SWIFT_AUTH_URL','http://127.0.0.1:8080/auth/v1.0')
+SWIFT_AUTH_VERSION = os.getenv('SWIFT_AUTH_VERSION','1')
+SWIFT_SSL_INSECURE = os.getenv('SWIFT_SSL_INSECURE',False)
+SWIFT_AUTH_USER = os.getenv('SWIFT_AUTH_USER','')
+SWIFT_AUTH_KEY = os.getenv('SWIFT_AUTH_KEY','')
 
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
@@ -133,4 +140,4 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 INTERNAL_IPS = ['127.0.0.1']
 
-LOGIN_REDIRECT_URL = 'home'
+LOGIN_REDIRECT_URL = 'containers'
