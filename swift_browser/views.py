@@ -17,6 +17,44 @@ def replace_hyphens(olddict):
         newdict[key] = value
     return newdict
 
+def prefix_list(prefix):
+    prefixes = []
+
+    if prefix:
+        elements = prefix.split('/')
+        elements = filter(None, elements)
+        prefix = ""
+        for element in elements:
+            prefix += element + '/'
+            prefixes.append({'display_name': element, 'full_name': prefix})
+
+    return prefixes
+
+def pseudofolder_object_list(objects, prefix):
+    pseudofolders = []
+    objs = []
+
+    duplist = []
+
+    for obj in objects:
+        # Rackspace Cloudfiles uses application/directory
+        # Cyberduck uses application/x-directory
+        if obj.get('content_type', None) in ('application/directory',
+                                             'application/x-directory'):
+            obj['subdir'] = obj['name']
+
+        if 'subdir' in obj:
+            # make sure that there is a single slash at the end
+            # Cyberduck appends a slash to the name of a pseudofolder
+            entry = obj['subdir'].strip('/') + '/'
+            if entry != prefix and entry not in duplist:
+                duplist.append(entry)
+                pseudofolders.append((entry, obj['subdir']))
+        else:
+            objs.append(obj)
+
+    return (pseudofolders, objs)
+
 @login_required
 def containers(request):
     if 'auth_token' not in request.session.keys():
@@ -55,6 +93,43 @@ def containers(request):
         'containers': containers,
         'session': request.session,
     })
+
+@login_required
+def container(request, container, prefix=None):
+    auth_token = request.session['auth_token']
+    storage_url = request.session['storage_url']
+
+    try:
+        http_conn = (urlparse(storage_url),client.HTTPConnection(storage_url, insecure=settings.SWIFT_SSL_INSECURE))
+        meta, objects = client.get_container(storage_url, auth_token,
+                                             container, delimiter='/',
+                                             prefix=prefix,
+                                             http_conn=http_conn)
+    except client.ClientException as exc:
+        messages.add_message(request, messages.ERROR, _("Access denied."))
+        return redirect(containerview)
+
+    prefixes = prefix_list(prefix)
+    pseudofolders, objs = pseudofolder_object_list(objects, prefix)
+    account = storage_url.split('/')[-1]
+
+    read_acl = meta.get('x-container-read', '').split(',')
+    public = False
+    required_acl = ['.r:*', '.rlistings']
+    if [x for x in read_acl if x in required_acl]:
+        public = True
+
+    return render(request,"container.html", {
+        'container': container,
+        'objects': objs,
+        'folders': pseudofolders,
+        'session': request.session,
+        'prefix': prefix,
+        'prefixes': prefixes,
+        'account': account,
+        'public': public
+    })
+
 
 
 

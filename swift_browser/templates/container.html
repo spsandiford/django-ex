@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container">
+
+        <ul class="breadcrumb">
+            <li><a href="{% url 'containers' %}">Containers</a></li> 
+            <li><span class="divider">/</span>
+                <a class="u" href="{% url 'container' container=container %}">{{container}}</a></li>
+
+            {% for prefix in prefixes %}
+                <li>
+                    <span class="divider">/</span>
+                    <a href="{% url 'container' container=container prefix=prefix.full_name %}">{{prefix.display_name}}</a>
+                </li>
+            {% endfor %}
+
+       </ul> 
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th style="width: 0.5em;" class="hidden-phone"></th>
+            <th>Name</th>
+            <th style="width: 12.5em;" class="hidden-phone">Created</th>
+            <th style="width: 6em;" class="hidden-phone">Size</th>
+            <th style="width: 1em;">
+            </th>
+        </tr>
+        </thead>
+        {% if folders or objects %} 
+        <tbody>
+        {% for folder in folders %}
+            <tr>
+                <td class="hidden-phone"><i class="icon-inbox"></i></td>
+                <td> 
+                    <strong>{{folder.0}}</strong>
+                </td>
+                <td class="hidden-phone"></td>
+                <td class="hidden-phone"></td>
+
+                    <td>
+                    </td>
+            </tr>
+        {% endfor %}
+
+        {% for key in objects %}
+            <tr>
+                <td class="hidden-phone"><i class="icon-file"></i></td>
+                <td>{{key.name}}</a></td>
+                <td class="hidden-phone">{{key.last_modified}}</td>
+	            <td class="hidden-phone">{{key.bytes}}</td>
+                    <td>
+                </td>
+            </tr>
+
+        {% endfor %}
+        </tbody> 
+        {% else %}
+        <tbody>
+            <tr>
+                <th colspan="5" class="center">
+                    <strong><center>There are no objects in this container yet. Upload new objects by clicking the red button.<center></strong>
+                </th>
+            </tr>
+        </tbody>
+        {% endif %}
+        <tfoot><tr><td colspan="5"></td></tr></tfoot>
+    </table>
+</div>
+{% endblock %}
+    {% block jsadd %} <script type="text/javascript"> $('input[id=file]').change(function() { $('#filetmp').val($(this).val()); }); </script> {% endblock %}
+
+

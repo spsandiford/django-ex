@@ -4,7 +4,7 @@ from django.contrib import admin
 from django.contrib.auth import views as auth_views
 
 from welcome.views import index, health
-from swift_browser.views import containers
+from swift_browser.views import container, containers
 
 urlpatterns = [
     url(r'^$', containers, name='containers'),
@@ -12,6 +12,7 @@ urlpatterns = [
     url(r'^logout/$', auth_views.logout, {'next_page': '/accounts/login'}, name='logout'),
     url(r'^health$', health),
     url(r'^admin/', include(admin.site.urls)),
+    url(r'^containers/(?P<container>.+?)/$', container, name='container'),
 ]
 
 if settings.DEBUG:

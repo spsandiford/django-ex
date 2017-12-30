@@ -3,7 +3,7 @@
 {% block content %}
     <div class="container">
         <ul class="breadcrumb">
-            <li>Containers</li>
+            <li><a href="{% url 'containers' %}">Containers</a></li>
        </ul> 
     
         <table class="table table-striped">
@@ -22,7 +22,7 @@
         {% for container in containers %}
             <tr>
             <td class="hidden-phone"><i class="icon-inbox"></i></td>
-            <td><strong>{{container.name}}</strong></td>
+            <td><strong><a href="{% url "container" container=container.name %}" class="block">{{container.name}}</a></strong></td>
     	    <td class="hidden-phone">{{container.count}}</td>
     	    <td class="hidden-phone">{{container.bytes|filesizeformat}}</td>
 
