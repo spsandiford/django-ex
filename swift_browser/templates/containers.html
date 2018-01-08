@@ -1,10 +1,11 @@
 {% extends "base.html" %}
+{% load bootstrap3 %}
 
 {% block content %}
     <div class="container">
         <ul class="breadcrumb">
             <li><a href="{% url 'containers' %}">Containers</a></li>
-       </ul> 
+        </ul> 
     
         <table class="table table-striped">
         
@@ -15,6 +16,11 @@
                 <th style="width: 1em;" class="hidden-phone">Objects</th>
                 <th style="width: 5em;" class="hidden-phone">Size</th>
                 <th style="width: 1em;">
+                    {% url 'create_container' as create_url %}
+                    {% if create_url %}
+                    {% bootstrap_button 'Create' icon='plus' button_class='btn-mini btn-danger' href=create_url extra_classes='pull-right' %}
+                    {% endif %}
+                </a>
                 </th>
             </tr>
         </thead>
@@ -22,11 +28,33 @@
         {% for container in containers %}
             <tr>
             <td class="hidden-phone"><i class="icon-inbox"></i></td>
-            <td><strong><a href="{% url "container" container=container.name %}" class="block">{{container.name}}</a></strong></td>
+            <td>
+                <form action="{% url 'container' %}" method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="container" value="{{container.name}}"/>
+                    <input type="hidden" name="subdir" value=""/>
+                    {% bootstrap_button container.name button_type='submit' button_class='btn-link' %}
+                </form>
+            </td>
     	    <td class="hidden-phone">{{container.count}}</td>
     	    <td class="hidden-phone">{{container.bytes|filesizeformat}}</td>
 
             <td>
+                <div class="btn-group pull-right">
+                    <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Action <span class="caret"></span>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <form action="{% url 'delete_container' %}" method="POST">
+                                {% csrf_token %}
+                                <input type="hidden" name="container" value="{{container.name}}"/>
+                                <a href="#" onclick="event.preventDefault(); this.parentNode.submit()">Delete</a>
+                                <!-- TODO: Confirm -->
+                            </form>
+                        </li>
+                    </ul>
+                </div>
             </td>
 
             </tr> 

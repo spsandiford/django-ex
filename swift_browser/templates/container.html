@@ -1,21 +1,27 @@
 {% extends "base.html" %}
+{% load bootstrap3 %}
 {% block content %}
 
 <div class="container">
+    {% include "messages.html" %}
 
         <ul class="breadcrumb">
             <li><a href="{% url 'containers' %}">Containers</a></li> 
-            <li><span class="divider">/</span>
-                <a class="u" href="{% url 'container' container=container %}">{{container}}</a></li>
+            <li> <form action="{% url 'container' %}" method="POST" class="no-bottom-margin-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="container" value="{{container}}"/>
+                    <input type="hidden" name="subdir" value=""/>
+                    {% bootstrap_button container button_type='submit' button_class='btn-link' %}
+                </form>
+            </li>
 
-            {% for prefix in prefixes %}
-                <li>
-                    <span class="divider">/</span>
-                    <a href="{% url 'container' container=container prefix=prefix.full_name %}">{{prefix.display_name}}</a>
-                </li>
+            {% for path_element in path_elements %}
+                <li> {{path_element}} </li>
             {% endfor %}
 
        </ul> 
+
+
     <table class="table table-striped">
         <thead>
         <tr>
@@ -24,16 +30,32 @@
             <th style="width: 12.5em;" class="hidden-phone">Created</th>
             <th style="width: 6em;" class="hidden-phone">Size</th>
             <th style="width: 1em;">
+                <div class="dropdown">
+                    <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                        <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                    </button>
+
+                    <ul class="dropdown-menu">
+                        <li>Upload</li>
+                        <li class="divider" />
+                        <li>Create Pseudofolder </li>
+                    </ul>
+                </div>
             </th>
         </tr>
         </thead>
-        {% if folders or objects %} 
+        {% if subdirs or folder_objects %} 
         <tbody>
-        {% for folder in folders %}
+        {% for subdir in subdirs %}
             <tr>
-                <td class="hidden-phone"><i class="icon-inbox"></i></td>
+                <td class="hidden-phone">{% bootstrap_icon "folder-open" %}</td>
                 <td> 
-                    <strong>{{folder.0}}</strong>
+                <form action="{% url 'container' %}" method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="container" value="{{container}}"/>
+                    <input type="hidden" name="subdir" value="{{subdir}}"/>
+                    {% bootstrap_button subdir button_type='submit' button_class='btn-link' %}
+                </form>
                 </td>
                 <td class="hidden-phone"></td>
                 <td class="hidden-phone"></td>
@@ -43,12 +65,12 @@
             </tr>
         {% endfor %}
 
-        {% for key in objects %}
+        {% for folder_object in folder_objects %}
             <tr>
                 <td class="hidden-phone"><i class="icon-file"></i></td>
-                <td>{{key.name}}</a></td>
-                <td class="hidden-phone">{{key.last_modified}}</td>
-	            <td class="hidden-phone">{{key.bytes}}</td>
+                <td>{{folder_object.name}}</a></td>
+                <td class="hidden-phone">{{folder_object.last_modified}}</td>
+	            <td class="hidden-phone">{{folder_object.bytes}}</td>
                     <td>
                 </td>
             </tr>
