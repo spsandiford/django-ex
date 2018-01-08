@@ -1,20 +1,17 @@
 {% load staticfiles %}
+{% load bootstrap3 %}
 <html>
     <head>
         <title>Swift Browser</title>
-        <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
         <link href='//fonts.googleapis.com/css?family=Lobster&subset=latin,latin-ext' rel='stylesheet' type='text/css'>
         <link rel="stylesheet" href="{% static 'css/browser.css' %}">
-        <script
-            src="https://code.jquery.com/jquery-3.2.1.min.js"
-            integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
-            crossorigin="anonymous">
-        </script>
-        <script
-            src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
-            integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
-            crossorigin="anonymous">
-        </script>
+        <script src="{% static "jquery/jquery.min.js" %}"></script>
+
+        {# Load bootstrap CSS and JavaScript #}
+        {% bootstrap_css %}
+        {% bootstrap_javascript %}
+
     </head>
     <body>
         <div class="page-header">
@@ -23,8 +20,10 @@
         <div class="content container">
             <div class="row">
                 <div class="col-md-8">
-                {% block content %}
-                {% endblock %}
+                    {# Display django.contrib.messages as Bootstrap alerts #}
+                    {% bootstrap_messages %}
+                    {% block content %}
+                    {% endblock %}
                 </div>
             </div>
         </div>
