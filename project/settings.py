@@ -33,6 +33,29 @@ DEBUG = bool(os.environ.get('DJANGO_DEBUG', False))
 
 ALLOWED_HOSTS = ['*']
 
+LOGGING_LEVEL = os.getenv('DJANGO_LOG_LEVEL', 'INFO')
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': LOGGING_LEVEL,
+	    'propagate': True,
+        },
+        'swift_browser': {
+            'handlers': ['console'],
+            'level': LOGGING_LEVEL,
+	    'propagate': True,
+        },
+    },
+}
 
 # Application definition
 
@@ -45,6 +68,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'debug_toolbar',
     'welcome',
+    'jquery',
+    'bootstrap3',
     'swift_browser',
 ]
 
