@@ -3,9 +3,14 @@ from django.conf import settings
 from django.shortcuts import redirect
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
+from django.contrib import messages
 from urllib.parse import urlparse
 from swiftclient import client
+import logging
 
+from .forms import CreateContainerForm, UploadFileForm, ViewContainerForm
+
+logger = logging.getLogger(__name__)
 
 def replace_hyphens(olddict):
     """ Replaces all hyphens in dict keys with an underscore.
@@ -58,6 +63,7 @@ def pseudofolder_object_list(objects, prefix):
 @login_required
 def containers(request):
     if 'auth_token' not in request.session.keys():
+        logger.info('No auth_token, attempting to authenticate')
         try:
             auth_version = settings.SWIFT_AUTH_VERSION or 1
             conn = client.Connection(authurl=settings.SWIFT_AUTH_URL,
@@ -66,16 +72,19 @@ def containers(request):
                     auth_version=auth_version,
                     insecure=settings.SWIFT_SSL_INSECURE)
             (storage_url, auth_token) = conn.get_auth()
+            logger.info('auth_token: %s' % auth_token)
+            logger.info('storage_url: %s' % storage_url)
             request.session['storage_url'] = storage_url
             request.session['auth_token'] = auth_token
         except client.ClientException:
-            messages.add_message(request, messages.ERROR, _("Login failed."))
+            messages.add_message(request, messages.ERROR, "Login failed.")
 
     auth_token = request.session['auth_token']
     storage_url = request.session['storage_url']
 
     try:
-        http_conn = (urlparse(storage_url),client.HTTPConnection(storage_url, insecure=settings.SWIFT_SSL_INSECURE))
+        http_conn = (urlparse(storage_url),
+                     client.HTTPConnection(storage_url, insecure=settings.SWIFT_SSL_INSECURE))
         account_stat, containers = client.get_account(storage_url, auth_token, http_conn=http_conn)
     except client.ClientException as exc:
         if exc.http_status == 403:
@@ -84,7 +93,8 @@ def containers(request):
             msg = 'Container listing failed.'
             messages.add_message(request, messages.ERROR, msg)
         else:
-            return redirect(login)
+            request.session.flush()
+            return redirect(settings.LOGIN_URL)
 
     account_stat = replace_hyphens(account_stat)
 
@@ -95,41 +105,127 @@ def containers(request):
     })
 
 @login_required
-def container(request, container, prefix=None):
+def container(request, container=None):
+    auth_token = request.session['auth_token']
+    storage_url = request.session['storage_url']
+
+    if request.method == 'POST':
+        form = ViewContainerForm(request.POST)
+        for row in form.fields.values():
+            print(row)
+        if form.is_valid():
+            container = form.cleaned_data['container']
+            subdir = form.cleaned_data['subdir']
+            try:
+                http_conn = (urlparse(storage_url),
+                             client.HTTPConnection(storage_url, insecure=settings.SWIFT_SSL_INSECURE))
+                meta, objects = client.get_container(storage_url, auth_token,
+                                                     container, delimiter='/',
+                                                     prefix=subdir,
+                                                     http_conn=http_conn)
+                subdirs = list()
+                folder_objects = list()
+                for folder_object in objects:
+                    if 'subdir' in folder_object.keys():
+                        subdirs.append(folder_object['subdir'])
+                    else:
+                        folder_objects.append(folder_object)
+            
+                account = storage_url.split('/')[-1]
+                if subdir:
+                    path_elements = subdir.split('/')
+                else:
+                    path_elements = []
+            
+                read_acl = meta.get('x-container-read', '').split(',')
+                public = False
+                required_acl = ['.r:*', '.rlistings']
+                if [x for x in read_acl if x in required_acl]:
+                    public = True
+
+                return render(request, "container.html", {
+                    'container': container,
+                    'subdirs': subdirs,
+                    'folder_objects': folder_objects,
+                    'account': account,
+                    'public': public,
+                    'session': request.session,
+                    'path_elements': path_elements,
+                    })
+
+            except client.ClientException:
+                messages.add_message(request, messages.ERROR, "Access denied.")
+                return redirect(containers)
+        else:
+            logger.info('Invalid form data')
+            logger.info(form.cleaned_data)
+            return redirect(containers)
+    else:
+        return redirect(containers)
+
+@login_required
+def create_container(request):
+    auth_token = request.session['auth_token']
+    storage_url = request.session['storage_url']
+
+    if request.method == 'POST':
+        form = CreateContainerForm(request.POST)
+        if form.is_valid():
+            container = form.cleaned_data['container_name']
+            try:
+                http_conn = (urlparse(storage_url),
+                             client.HTTPConnection(storage_url, insecure=settings.SWIFT_SSL_INSECURE))
+                client.put_container(storage_url, auth_token, container, http_conn=http_conn)
+                messages.add_message(request, messages.INFO, "Container created.")
+            except client.ClientException:
+                messages.add_message(request, messages.ERROR, "Access denied.")
+
+            return redirect(containers)
+    else:
+        form = CreateContainerForm()
+
+    return render(request, 'create_container.html', {'form': form})
+
+
+@login_required
+def delete_container(request, container, prefix=None):
     auth_token = request.session['auth_token']
     storage_url = request.session['storage_url']
 
     try:
-        http_conn = (urlparse(storage_url),client.HTTPConnection(storage_url, insecure=settings.SWIFT_SSL_INSECURE))
-        meta, objects = client.get_container(storage_url, auth_token,
-                                             container, delimiter='/',
-                                             prefix=prefix,
-                                             http_conn=http_conn)
-    except client.ClientException as exc:
-        messages.add_message(request, messages.ERROR, _("Access denied."))
-        return redirect(containerview)
+        http_conn = (urlparse(storage_url),
+                     client.HTTPConnection(storage_url, insecure=settings.SWIFT_SSL_INSECURE))
+        _m, objects = client.get_container(storage_url, auth_token, container, http_conn=http_conn)
+        for obj in objects:
+            client.delete_object(storage_url, auth_token,
+                                 container, obj['name'], http_conn=http_conn)
+        client.delete_container(storage_url, auth_token, container)
+        messages.add_message(request, messages.INFO, "Container deleted.")
+    except client.ClientException:
+        messages.add_message(request, messages.ERROR, "Access denied.")
 
-    prefixes = prefix_list(prefix)
-    pseudofolders, objs = pseudofolder_object_list(objects, prefix)
-    account = storage_url.split('/')[-1]
+    return redirect(containers)
 
-    read_acl = meta.get('x-container-read', '').split(',')
-    public = False
-    required_acl = ['.r:*', '.rlistings']
-    if [x for x in read_acl if x in required_acl]:
-        public = True
+@login_required
+def upload(request):
+    auth_token = request.session['auth_token']
+    storage_url = request.session['storage_url']
 
-    return render(request,"container.html", {
-        'container': container,
-        'objects': objs,
-        'folders': pseudofolders,
-        'session': request.session,
-        'prefix': prefix,
-        'prefixes': prefixes,
-        'account': account,
-        'public': public
-    })
+    if request.method == 'POST':
+        form = UploadFileForm(request.POST)
+        if form.is_valid():
+            container = form.cleaned_data['container_name']
+            try:
+                http_conn = (urlparse(storage_url),
+                             client.HTTPConnection(storage_url, insecure=settings.SWIFT_SSL_INSECURE))
+                client.put_container(storage_url, auth_token, container, http_conn=http_conn)
+                messages.add_message(request, messages.INFO, "Container created.")
+            except client.ClientException:
+                messages.add_message(request, messages.ERROR, "Access denied.")
 
+            return redirect(containers)
+    else:
+        form = CreateContainerForm()
 
-
+    return render(request, 'create_container.html', {'form': form})
 
