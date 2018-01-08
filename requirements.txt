@@ -4,3 +4,5 @@ gunicorn==19.4.5
 psycopg2==2.7.3.1
 whitenoise==3.3.1
 python-swiftclient==3.4.0
+django-bootstrap3==9.1.0
+django-static-jquery3==3.2.1
