@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load bootstrap3 %}
+{% block content %}
+
+<div class="container">
+
+        <ul class="breadcrumb">
+            <li><a href="{% url 'containers' %}">Containers</a></li> 
+            <li>
+                <a href="{% url 'container' %}?container={{container}}">{{container}}</a>
+            </li>
+
+            {% for path_entry in path %}
+                <li>
+                    <a href="{% url 'container' %}?container={{container}}&subdir={{path_entry.subdir}}">{{path_entry.path_element}}</a>
+                </li>
+            {% endfor %}
+
+       </ul> 
+
+<form method="POST" action="{% url 'upload' %}" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% bootstrap_form form%}
+    {% bootstrap_button 'Upload' icon='upload' button_type='submit' %}
+</form>
+
+    {% block jsadd %}
+    <script type="text/javascript">
+        $('input[id=id_file]').change(function() {
+            var file_name = $(this)[0].files[0].name;
+            var path = '{{subdir}}' + file_name;
+            $('input[id=id_object_name]').val(path);
+        });
+    </script>
+    {% endblock %}
+
+{% endblock %}
+

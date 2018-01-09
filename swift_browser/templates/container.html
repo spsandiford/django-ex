@@ -34,7 +34,7 @@
                     </button>
 
                     <ul class="dropdown-menu">
-                        <li>Upload</li>
+                        <li><a href="{% url 'upload' %}?container={{container}}&subdir={{upload_subdir}}">Upload</a></li>
                         <li class="divider" />
                         <li>Create Pseudofolder </li>
                     </ul>
@@ -76,7 +76,7 @@
         <tbody>
             <tr>
                 <th colspan="5" class="center">
-                    <strong><center>There are no objects in this container yet. Upload new objects by clicking the red button.<center></strong>
+                    <strong><center>There are no objects in this container yet. Upload new objects by clicking the plus button.<center></strong>
                 </th>
             </tr>
         </tbody>

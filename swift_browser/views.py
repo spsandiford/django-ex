@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 from swiftclient import client
 import logging
 
-from .forms import CreateContainerForm, UploadFileForm, ViewContainerForm
+from .forms import CreateContainerForm, UploadFileForm
 
 logger = logging.getLogger(__name__)
 
@@ -21,44 +21,6 @@ def replace_hyphens(olddict):
         key = key.replace('-', '_')
         newdict[key] = value
     return newdict
-
-def prefix_list(prefix):
-    prefixes = []
-
-    if prefix:
-        elements = prefix.split('/')
-        elements = filter(None, elements)
-        prefix = ""
-        for element in elements:
-            prefix += element + '/'
-            prefixes.append({'display_name': element, 'full_name': prefix})
-
-    return prefixes
-
-def pseudofolder_object_list(objects, prefix):
-    pseudofolders = []
-    objs = []
-
-    duplist = []
-
-    for obj in objects:
-        # Rackspace Cloudfiles uses application/directory
-        # Cyberduck uses application/x-directory
-        if obj.get('content_type', None) in ('application/directory',
-                                             'application/x-directory'):
-            obj['subdir'] = obj['name']
-
-        if 'subdir' in obj:
-            # make sure that there is a single slash at the end
-            # Cyberduck appends a slash to the name of a pseudofolder
-            entry = obj['subdir'].strip('/') + '/'
-            if entry != prefix and entry not in duplist:
-                duplist.append(entry)
-                pseudofolders.append((entry, obj['subdir']))
-        else:
-            objs.append(obj)
-
-    return (pseudofolders, objs)
 
 @login_required
 def containers(request):
@@ -162,6 +124,7 @@ def container(request, container=None):
         return render(request, "container.html", {
             'container': container,
             'subdirs': subdirs,
+            'upload_subdir': subdir,
             'folder_objects': folder_objects,
             'account': account,
             'public': public,
@@ -221,21 +184,45 @@ def upload(request):
     auth_token = request.session['auth_token']
     storage_url = request.session['storage_url']
 
+    container = ''
+    subdir = ''
+    if 'container' in request.GET.keys():
+        container = request.GET['container']
+    if 'subdir' in request.GET.keys():
+        subdir = request.GET['subdir']
+
+    path = list()
+    if subdir:
+        current_path = ''
+        for path_element in subdir.split('/'):
+            if path_element:
+                current_path += "%s/" % (path_element)
+                path.append({ 'subdir': current_path, 'path_element': path_element })
+
     if request.method == 'POST':
-        form = UploadFileForm(request.POST)
+        form = UploadFileForm(request.POST, request.FILES)
         if form.is_valid():
-            container = form.cleaned_data['container_name']
+            container = form.cleaned_data['container']
+            object_name = form.cleaned_data['object_name']
+            upload_file = request.FILES['file']
+            logger.info("File upload for /%s/%s" % (container, object_name))
             try:
                 http_conn = (urlparse(storage_url),
                              client.HTTPConnection(storage_url, insecure=settings.SWIFT_SSL_INSECURE))
-                client.put_container(storage_url, auth_token, container, http_conn=http_conn)
-                messages.add_message(request, messages.INFO, "Container created.")
+                client.put_object(storage_url, auth_token,
+                        container, object_name, http_conn=http_conn)
+                messages.add_message(request, messages.INFO, "File uploaded.")
             except client.ClientException:
                 messages.add_message(request, messages.ERROR, "Access denied.")
 
             return redirect(containers)
     else:
-        form = CreateContainerForm()
+        form = UploadFileForm(initial={'container': container, 'object_name': subdir})
 
-    return render(request, 'create_container.html', {'form': form})
+    return render(request, 'upload_file.html', {
+            'form': form,
+            'path': path,
+            'container': container,
+            'subdir': subdir,
+        })
 
