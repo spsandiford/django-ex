@@ -145,7 +145,7 @@ def create_container(request):
     if request.method == 'POST':
         form = CreateContainerForm(request.POST)
         if form.is_valid():
-            container = form.cleaned_data['container_name']
+            container = form.cleaned_data['container']
             try:
                 http_conn = (urlparse(storage_url),
                              client.HTTPConnection(storage_url, insecure=settings.SWIFT_SSL_INSECURE))
@@ -162,18 +162,26 @@ def create_container(request):
 
 
 @login_required
-def delete_container(request, container, prefix=None):
+def delete_container(request):
     auth_token = request.session['auth_token']
     storage_url = request.session['storage_url']
+
+    container = ''
+    if 'container' in request.GET.keys():
+        container = request.GET['container']
+    else:
+        return redirect(containers)
 
     try:
         http_conn = (urlparse(storage_url),
                      client.HTTPConnection(storage_url, insecure=settings.SWIFT_SSL_INSECURE))
         _m, objects = client.get_container(storage_url, auth_token, container, http_conn=http_conn)
         for obj in objects:
+            logger.info("Deleting object %s in container %s" % (obj['name'], container))
             client.delete_object(storage_url, auth_token,
                                  container, obj['name'], http_conn=http_conn)
-        client.delete_container(storage_url, auth_token, container)
+        logger.info("Deleting container %s" % (container))
+        client.delete_container(storage_url, auth_token, container, http_conn=http_conn)
         messages.add_message(request, messages.INFO, "Container deleted.")
     except client.ClientException:
         messages.add_message(request, messages.ERROR, "Access denied.")

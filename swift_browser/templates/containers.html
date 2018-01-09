@@ -43,12 +43,7 @@
                     </button>
                     <ul class="dropdown-menu">
                         <li>
-                            <form action="{% url 'delete_container' %}" method="POST">
-                                {% csrf_token %}
-                                <input type="hidden" name="container" value="{{container.name}}"/>
-                                <a href="#" onclick="event.preventDefault(); this.parentNode.submit()">Delete</a>
-                                <!-- TODO: Confirm -->
-                            </form>
+                            <a href="{% url 'delete_container' %}?container={{container.name}}" onclick="return confirm('Delete {{container.name}}?');">Delete</a>
                         </li>
                     </ul>
                 </div>
