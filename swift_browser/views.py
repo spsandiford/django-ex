@@ -4,6 +4,7 @@ from django.shortcuts import redirect
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 from django.contrib import messages
+from django.urls import reverse
 from urllib.parse import urlparse
 from swiftclient import client
 import logging
@@ -210,12 +211,13 @@ def upload(request):
                 http_conn = (urlparse(storage_url),
                              client.HTTPConnection(storage_url, insecure=settings.SWIFT_SSL_INSECURE))
                 client.put_object(storage_url, auth_token,
-                        container, object_name, http_conn=http_conn)
+                        container, object_name, upload_file,
+                        http_conn=http_conn)
                 messages.add_message(request, messages.INFO, "File uploaded.")
             except client.ClientException:
                 messages.add_message(request, messages.ERROR, "Access denied.")
 
-            return redirect(containers)
+            return redirect(reverse('container') + '?container=%s&subdir=%s' % (container, subdir))
     else:
         form = UploadFileForm(initial={'container': container, 'object_name': subdir})
 
@@ -225,4 +227,41 @@ def upload(request):
             'container': container,
             'subdir': subdir,
         })
+
+@login_required
+def delete_object(request):
+    auth_token = request.session['auth_token']
+    storage_url = request.session['storage_url']
+
+    container = ''
+    subdir = ''
+    object_name = ''
+
+    if 'container' in request.GET.keys():
+        container = request.GET['container']
+    else:
+        return redirect(containers)
+
+    if 'subdir' in request.GET.keys():
+        subdir = request.GET['subdir']
+    else:
+        return redirect(reverse('container') + '?container=%s' % (container))
+
+    if 'object_name' in request.GET.keys():
+        object_name = request.GET['object_name']
+    else:
+        return redirect(reverse('container') + '?container=%s&subdir=%s' % (container, subdir))
+
+    logger.info("Delete File /%s/%s%s" % (container, subdir, object_name))
+    try:
+        http_conn = (urlparse(storage_url),
+                     client.HTTPConnection(storage_url, insecure=settings.SWIFT_SSL_INSECURE))
+        client.delete_object(storage_url, auth_token,
+                container, object_name,
+                http_conn=http_conn)
+        messages.add_message(request, messages.INFO, "File deleted.")
+    except client.ClientException:
+        messages.add_message(request, messages.ERROR, "Access denied.")
+
+    return redirect(reverse('container') + '?container=%s&subdir=%s' % (container, subdir))
 

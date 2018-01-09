@@ -3,7 +3,6 @@
 {% block content %}
 
 <div class="container">
-    {% include "messages.html" %}
 
         <ul class="breadcrumb">
             <li><a href="{% url 'containers' %}">Containers</a></li> 
@@ -66,7 +65,17 @@
                 <td>{{folder_object.display_name}}</a></td>
                 <td class="hidden-phone">{{folder_object.last_modified}}</td>
 	            <td class="hidden-phone">{{folder_object.bytes}}</td>
-                    <td>
+                <td>
+                    <div class="btn-group pull-right">
+                        <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            Action <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a href="{% url 'delete_object' %}?container={{container}}&subdir={{upload_subdir}}&object_name={{folder_object.name}}" onclick="return confirm('Delete {{folder_object.display_name}}?');">Delete</a>
+                            </li>
+                        </ul>
+                    </div>
                 </td>
             </tr>
 
