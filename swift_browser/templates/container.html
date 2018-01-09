@@ -11,8 +11,10 @@
                 <a href="{% url 'container' %}?container={{container}}">{{container}}</a>
             </li>
 
-            {% for path_element in path_elements %}
-                <li> {{path_element}} </li>
+            {% for path_entry in path %}
+                <li>
+                    <a href="{% url 'container' %}?container={{container}}&subdir={{path_entry.subdir}}">{{path_entry.path_element}}</a>
+                </li>
             {% endfor %}
 
        </ul> 
@@ -47,7 +49,7 @@
                 <td class="hidden-phone">{% bootstrap_icon "folder-open" %}</td>
                 <td> 
                     <strong>
-                        <a href="{% url 'container' %}?container={{container}}&subdir={{subdir}}/">{{subdir}}</a>
+                        <a href="{% url 'container' %}?container={{container}}&subdir={{subdir.subdir}}/">{{subdir.display_name}}</a>
                     </strong>
                 </td>
                 <td class="hidden-phone"></td>
@@ -61,7 +63,7 @@
         {% for folder_object in folder_objects %}
             <tr>
                 <td class="hidden-phone"><i class="icon-file"></i></td>
-                <td>{{folder_object.name}}</a></td>
+                <td>{{folder_object.display_name}}</a></td>
                 <td class="hidden-phone">{{folder_object.last_modified}}</td>
 	            <td class="hidden-phone">{{folder_object.bytes}}</td>
                     <td>

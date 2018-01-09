@@ -127,15 +127,31 @@ def container(request, container=None):
         folder_objects = list()
         for folder_object in objects:
             if 'subdir' in folder_object.keys():
-                subdirs.append(folder_object['subdir'])
+                if folder_object['subdir'].startswith(subdir):
+                    subdirs.append({
+                            'display_name': folder_object['subdir'][len(subdir):],
+                            'subdir': folder_object['subdir'],
+                        })
+                else:
+                    subdirs.append({
+                            'display_name': folder_object['subdir'],
+                            'subdir': folder_object['subdir'],
+                        })
             else:
+                if folder_object['name'].startswith(subdir):
+                    folder_object['display_name'] = folder_object['name'][len(subdir):]
+                else:
+                    folder_object['display_name'] = folder_object['name']
                 folder_objects.append(folder_object)
     
         account = storage_url.split('/')[-1]
+        path = list()
         if subdir:
-            path_elements = subdir.split('/')
-        else:
-            path_elements = []
+            current_path = ''
+            for path_element in subdir.split('/'):
+                if path_element:
+                    current_path += "%s/" % (path_element)
+                    path.append({ 'subdir': current_path, 'path_element': path_element })
     
         read_acl = meta.get('x-container-read', '').split(',')
         public = False
@@ -150,7 +166,7 @@ def container(request, container=None):
             'account': account,
             'public': public,
             'session': request.session,
-            'path_elements': path_elements,
+            'path': path,
             })
 
     except client.ClientException:
