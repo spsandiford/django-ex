@@ -109,58 +109,52 @@ def container(request, container=None):
     auth_token = request.session['auth_token']
     storage_url = request.session['storage_url']
 
-    if request.method == 'POST':
-        form = ViewContainerForm(request.POST)
-        for row in form.fields.values():
-            print(row)
-        if form.is_valid():
-            container = form.cleaned_data['container']
-            subdir = form.cleaned_data['subdir']
-            try:
-                http_conn = (urlparse(storage_url),
-                             client.HTTPConnection(storage_url, insecure=settings.SWIFT_SSL_INSECURE))
-                meta, objects = client.get_container(storage_url, auth_token,
-                                                     container, delimiter='/',
-                                                     prefix=subdir,
-                                                     http_conn=http_conn)
-                subdirs = list()
-                folder_objects = list()
-                for folder_object in objects:
-                    if 'subdir' in folder_object.keys():
-                        subdirs.append(folder_object['subdir'])
-                    else:
-                        folder_objects.append(folder_object)
-            
-                account = storage_url.split('/')[-1]
-                if subdir:
-                    path_elements = subdir.split('/')
-                else:
-                    path_elements = []
-            
-                read_acl = meta.get('x-container-read', '').split(',')
-                public = False
-                required_acl = ['.r:*', '.rlistings']
-                if [x for x in read_acl if x in required_acl]:
-                    public = True
+    if 'container' not in request.GET.keys():
+        return redirect(containers)
+    container = request.GET['container']
+    subdir = ''
+    if 'subdir' in request.GET.keys():
+        subdir = request.GET['subdir']
 
-                return render(request, "container.html", {
-                    'container': container,
-                    'subdirs': subdirs,
-                    'folder_objects': folder_objects,
-                    'account': account,
-                    'public': public,
-                    'session': request.session,
-                    'path_elements': path_elements,
-                    })
-
-            except client.ClientException:
-                messages.add_message(request, messages.ERROR, "Access denied.")
-                return redirect(containers)
+    try:
+        http_conn = (urlparse(storage_url),
+                     client.HTTPConnection(storage_url, insecure=settings.SWIFT_SSL_INSECURE))
+        meta, objects = client.get_container(storage_url, auth_token,
+                                             container, delimiter='/',
+                                             prefix=subdir,
+                                             http_conn=http_conn)
+        subdirs = list()
+        folder_objects = list()
+        for folder_object in objects:
+            if 'subdir' in folder_object.keys():
+                subdirs.append(folder_object['subdir'])
+            else:
+                folder_objects.append(folder_object)
+    
+        account = storage_url.split('/')[-1]
+        if subdir:
+            path_elements = subdir.split('/')
         else:
-            logger.info('Invalid form data')
-            logger.info(form.cleaned_data)
-            return redirect(containers)
-    else:
+            path_elements = []
+    
+        read_acl = meta.get('x-container-read', '').split(',')
+        public = False
+        required_acl = ['.r:*', '.rlistings']
+        if [x for x in read_acl if x in required_acl]:
+            public = True
+
+        return render(request, "container.html", {
+            'container': container,
+            'subdirs': subdirs,
+            'folder_objects': folder_objects,
+            'account': account,
+            'public': public,
+            'session': request.session,
+            'path_elements': path_elements,
+            })
+
+    except client.ClientException:
+        messages.add_message(request, messages.ERROR, "Access denied.")
         return redirect(containers)
 
 @login_required

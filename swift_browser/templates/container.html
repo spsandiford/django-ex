@@ -7,12 +7,8 @@
 
         <ul class="breadcrumb">
             <li><a href="{% url 'containers' %}">Containers</a></li> 
-            <li> <form action="{% url 'container' %}" method="POST" class="no-bottom-margin-form">
-                    {% csrf_token %}
-                    <input type="hidden" name="container" value="{{container}}"/>
-                    <input type="hidden" name="subdir" value=""/>
-                    {% bootstrap_button container button_type='submit' button_class='btn-link' %}
-                </form>
+            <li>
+                <a href="{% url 'container' %}?container={{container}}">{{container}}</a>
             </li>
 
             {% for path_element in path_elements %}
@@ -50,12 +46,9 @@
             <tr>
                 <td class="hidden-phone">{% bootstrap_icon "folder-open" %}</td>
                 <td> 
-                <form action="{% url 'container' %}" method="POST">
-                    {% csrf_token %}
-                    <input type="hidden" name="container" value="{{container}}"/>
-                    <input type="hidden" name="subdir" value="{{subdir}}"/>
-                    {% bootstrap_button subdir button_type='submit' button_class='btn-link' %}
-                </form>
+                    <strong>
+                        <a href="{% url 'container' %}?container={{container}}&subdir={{subdir}}/">{{subdir}}</a>
+                    </strong>
                 </td>
                 <td class="hidden-phone"></td>
                 <td class="hidden-phone"></td>

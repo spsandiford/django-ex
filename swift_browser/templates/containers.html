@@ -29,12 +29,9 @@
             <tr>
             <td class="hidden-phone"><i class="icon-inbox"></i></td>
             <td>
-                <form action="{% url 'container' %}" method="POST">
-                    {% csrf_token %}
-                    <input type="hidden" name="container" value="{{container.name}}"/>
-                    <input type="hidden" name="subdir" value=""/>
-                    {% bootstrap_button container.name button_type='submit' button_class='btn-link' %}
-                </form>
+                <strong>
+                    <a href="{% url 'container' %}?container={{container.name}}">{{container.name}}</a>
+                </strong>
             </td>
     	    <td class="hidden-phone">{{container.count}}</td>
     	    <td class="hidden-phone">{{container.bytes|filesizeformat}}</td>
