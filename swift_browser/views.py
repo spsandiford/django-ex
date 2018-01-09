@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 from swiftclient import client
 import logging
 
-from .forms import CreateContainerForm, UploadFileForm
+from .forms import CreateContainerForm, UploadFileForm, CreateFolderForm
 
 logger = logging.getLogger(__name__)
 
@@ -193,33 +193,21 @@ def upload(request):
     auth_token = request.session['auth_token']
     storage_url = request.session['storage_url']
 
-    container = ''
-    subdir = ''
-    if 'container' in request.GET.keys():
-        container = request.GET['container']
-    if 'subdir' in request.GET.keys():
-        subdir = request.GET['subdir']
-
-    path = list()
-    if subdir:
-        current_path = ''
-        for path_element in subdir.split('/'):
-            if path_element:
-                current_path += "%s/" % (path_element)
-                path.append({ 'subdir': current_path, 'path_element': path_element })
-
     if request.method == 'POST':
         form = UploadFileForm(request.POST, request.FILES)
         if form.is_valid():
             container = form.cleaned_data['container']
             object_name = form.cleaned_data['object_name']
+            subdir = form.cleaned_data['subdir']
             upload_file = request.FILES['file']
-            logger.info("File upload for /%s/%s" % (container, object_name))
+            logger.info("File upload for /%s/%s%s" % (container, subdir, object_name))
             try:
                 http_conn = (urlparse(storage_url),
                              client.HTTPConnection(storage_url, insecure=settings.SWIFT_SSL_INSECURE))
                 client.put_object(storage_url, auth_token,
-                        container, object_name, upload_file,
+                        container,
+                        name=subdir + object_name,
+                        contents=upload_file,
                         http_conn=http_conn)
                 messages.add_message(request, messages.INFO, "File uploaded.")
             except client.ClientException:
@@ -227,14 +215,32 @@ def upload(request):
 
             return redirect(reverse('container') + '?container=%s&subdir=%s' % (container, subdir))
     else:
-        form = UploadFileForm(initial={'container': container, 'object_name': subdir})
+        container = ''
+        subdir = ''
+        if 'container' in request.GET.keys():
+            container = request.GET['container']
+        if 'subdir' in request.GET.keys():
+            subdir = request.GET['subdir']
+    
+        path = list()
+        if subdir:
+            current_path = ''
+            for path_element in subdir.split('/'):
+                if path_element:
+                    current_path += "%s/" % (path_element)
+                    path.append({ 'subdir': current_path, 'path_element': path_element })
 
-    return render(request, 'upload_file.html', {
-            'form': form,
-            'path': path,
-            'container': container,
-            'subdir': subdir,
-        })
+        form = UploadFileForm(initial={
+                'container': container,
+                'subdir': subdir,
+            })
+
+        return render(request, 'upload_file.html', {
+                'form': form,
+                'path': path,
+                'container': container,
+                'subdir': subdir,
+            })
 
 @login_required
 def delete_object(request):
@@ -272,4 +278,67 @@ def delete_object(request):
         messages.add_message(request, messages.ERROR, "Access denied.")
 
     return redirect(reverse('container') + '?container=%s&subdir=%s' % (container, subdir))
+
+@login_required
+def create_folder(request):
+    auth_token = request.session['auth_token']
+    storage_url = request.session['storage_url']
+
+    if request.method == 'POST':
+        form = CreateFolderForm(request.POST)
+        if form.is_valid():
+            container = form.cleaned_data['container']
+            subdir=''
+            if 'subdir' in form.cleaned_data.keys():
+                subdir = form.cleaned_data['subdir']
+            folder_name = form.cleaned_data['folder_name']
+            try:
+                object_name = subdir + folder_name + '/'
+                logger.info("Creating folder %s" % (object_name))
+                http_conn = (urlparse(storage_url),
+                             client.HTTPConnection(storage_url, insecure=settings.SWIFT_SSL_INSECURE))
+                client.put_object(storage_url, auth_token,
+                        container,
+                        name=object_name,
+                        contents=None,
+                        content_type='application/directory',
+                        http_conn=http_conn)
+                messages.add_message(request, messages.INFO, "Folder created.")
+            except client.ClientException:
+                messages.add_message(request, messages.ERROR, "Access denied.")
+                return redirect(reverse('container') + '?container=%s&subdir=%s/' % (container, subdir))
+
+            return redirect(reverse('container') + '?container=%s&subdir=%s/' % (container, subdir + folder_name))
+        else:
+            messages.add_message(request, messages.ERROR, "Invalid input")
+            logger.error("Form is not valid: %s" % form.cleaned_data)
+            return redirect(reverse('create_folder') + '?container=%s&subdir=%s/' % (container, subdir))
+    else:
+        container = ''
+        subdir = ''
+        if 'container' in request.GET.keys():
+            container = request.GET['container']
+        if 'subdir' in request.GET.keys():
+            subdir = request.GET['subdir']
+    
+        path = list()
+        if subdir:
+            current_path = ''
+            for path_element in subdir.split('/'):
+                if path_element:
+                    current_path += "%s/" % (path_element)
+                    path.append({ 'subdir': current_path, 'path_element': path_element })
+
+        form = CreateFolderForm(initial={
+                'container': container,
+                'subdir': subdir,
+            })
+
+        return render(request, 'create_folder.html', {
+                'form': form,
+                'container': container,
+                'subdir': subdir,
+                'path': path,
+            })
+
 

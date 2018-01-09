@@ -35,7 +35,7 @@
                     <ul class="dropdown-menu">
                         <li><a href="{% url 'upload' %}?container={{container}}&subdir={{upload_subdir}}">Upload</a></li>
                         <li class="divider" />
-                        <li>Create Pseudofolder </li>
+                        <li><a href="{% url 'create_folder' %}?container={{container}}&subdir={{upload_subdir}}">Create Pseudofolder</a></li>
                     </ul>
                 </div>
             </th>

@@ -47,6 +47,12 @@ class DeleteContainerForm(forms.Form):
 class UploadFileForm(forms.Form):
     """ Form to allow uploading a file to be pushed to a container """
     file = forms.FileField()
-    object_name = ObjectNameField(label='Object Name')
     container = ContainerNameField(label='Container')
+    subdir = ObjectNameField(label='Subdirectory')
+    object_name = ObjectNameField(label='Object Name')
+
+class CreateFolderForm(forms.Form):
+    container = ContainerNameField(label='Container Name')
+    subdir = ObjectNameField(label='Subdirectory')
+    folder_name = forms.CharField(label='Folder Name', max_length=256)
 

@@ -18,20 +18,12 @@
 
        </ul> 
 
-<form method="POST" action="{% url 'upload' %}" enctype="multipart/form-data">
+<form method="POST" action="{% url 'create_folder' %}">
     {% csrf_token %}
     {% bootstrap_form form%}
-    {% bootstrap_button 'Upload' icon='upload' button_type='submit' %}
+    {% bootstrap_button 'Create' button_type='submit' %}
 </form>
 
-    {% block jsadd %}
-    <script type="text/javascript">
-        $('input[id=id_file]').change(function() {
-            var file_name = $(this)[0].files[0].name;
-            $('input[id=id_object_name]').val(file_name);
-        });
-    </script>
-    {% endblock %}
-
 {% endblock %}
+
 

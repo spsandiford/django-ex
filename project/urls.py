@@ -4,7 +4,7 @@ from django.contrib import admin
 from django.contrib.auth import views as auth_views
 
 from welcome.views import index, health
-from swift_browser.views import container, containers, create_container, delete_container, upload, delete_object
+from swift_browser.views import container, containers, create_container, delete_container, upload, delete_object, create_folder
 
 urlpatterns = [
     url(r'^$', containers, name='containers'),
@@ -17,6 +17,7 @@ urlpatterns = [
     url(r'^view_container/$', container, name='container'),
     url(r'^upload/$', upload, name='upload'),
     url(r'^delete_object/$', delete_object, name='delete_object'),
+    url(r'^create_folder/$', create_folder, name='create_folder'),
 ]
 
 if settings.DEBUG:
